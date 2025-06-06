@@ -189,13 +189,13 @@ function Home() {
     </Mui.Drawer>
     <Mui.Box style={{ display: 'block', marginLeft: secondBoxMarginLeft }}>
       <Mui.AppBar style={{ left: secondBoxMarginLeft, zIndex: 1200 }}>
-        <Mui.Toolbar>
-          <Mui.Typography color="inherit" sx={{ fontWeight: 500, letterSpacing: 0.5, fontSize: 20 }}>
+        <Mui.Toolbar sx={{ width: `calc(100vw - ${secondBoxMarginLeft} - 20px)` }}>
+          <Mui.Typography color="inherit" sx={{ fontWeight: 500, letterSpacing: 0.5, fontSize: 20, flexGrow: 1 }}>
             {selectedIndex.title}
           </Mui.Typography>
           <Mui.IconButton onClick={() => {
             theme.rotateThemeMode()
-          }}>
+          }} sx={{ right: 20 }}>
             {currentThemeMode === 'light' ? <Mui.Icons.Brightness4 /> : <Mui.Icons.Brightness7 />}
           </Mui.IconButton>
         </Mui.Toolbar>
