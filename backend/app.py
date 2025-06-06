@@ -26,6 +26,23 @@ server_statstics = {
     'last_refresh_time': 0,
     'last_commit_time': 0,
 }
+prior_mime_types = {
+    "bmp": "image/bmp",
+    "doc": "application/msword",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "htm": "text/htm",
+    "html": "text/html",
+    "jpg": "image/jpg",
+    "jpeg": "image/jpeg",
+    "pdf": "application/pdf",
+    "png": "image/png",
+    "ppt": "application/vnd.ms-powerpoint",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "tiff": "image/tiff",
+    "txt": "text/plain",
+    "xls": "application/vnd.ms-excel",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+}
 
 
 def makeResult(status: str, data: typing.Any) -> dict[str, typing.Any]:
@@ -48,7 +65,7 @@ def parseRequestRange(s, flen):
             return [int(i) for i in c]
 
 
-def makeFileResponse(file: sambaService.SambaFile, mime: typing.Optional[str]):
+def makeFileResponse(file: sambaService.SambaFile, filename: str, mime: typing.Optional[str]):
     if not mime:
         mime = 'application/octet-stream'
         
@@ -75,7 +92,7 @@ def makeFileResponse(file: sambaService.SambaFile, mime: typing.Optional[str]):
         response.status_code = 206
         return response
 
-    return flask.send_file(file, as_attachment=not isPreview, mimetype=mime, download_name=f'download.{mimetypes.guess_extension(mime)}')
+    return flask.send_file(file, as_attachment=not isPreview, mimetype=mime, download_name=filename)
 
 
 
@@ -389,6 +406,72 @@ def sambaMkdir():
         return makeResult(False, str(e))
 
 
+@app.route('/v1/samba/files/touch', methods=['POST'])
+def sambaTouch():
+    file_path = flask.request.json.get('path', '')
+    if not file_path:
+        return makeResult(False, 'Path is required')
+    samba_service_id = flask.request.json.get('samba_service_id', 0)
+    samba_service = dataProvider.DataProvider.getSambaService(samba_service_id)
+    if not samba_service:
+        return makeResult(False, 'Samba service not found')
+    
+    if not sambaConnectionManager.connected(samba_service['service_name'], samba_service['share_name']):
+        sambaConnectionManager.connect(
+            samba_service['service_name'],
+            samba_service['share_name'],            
+            samba_service['user_id'],
+            samba_service['password'],
+            samba_service['use_ntlm_v2'],
+            samba_service['is_direct_tcp'],
+        )
+
+    try:
+        with sambaConnectionManager.open(samba_service['service_name'], samba_service['share_name'], pathlib.Path(file_path), 'wb') as remote_file:
+            pass
+        return makeResult(True, 'File created')
+    except Exception as e:
+        return makeResult(False, str(e))
+
+
+@app.route('/v1/samba/files/update', methods=['POST'])
+def sambaFileUpdate():
+    file_path = flask.request.json.get('path')
+    if not file_path:
+        return makeResult(False, 'Path is required')
+    content = flask.request.json.get('content')
+    if not content:
+        return makeResult(False, 'Content is required')
+    samba_service_id = flask.request.json.get('samba_service_id')
+    samba_service = dataProvider.DataProvider.getSambaService(samba_service_id)
+    try:
+        target_dir = pathlib.Path(file_path)
+    except Exception as e:
+        return makeResult(False, 'Invalid path')
+    
+    if not samba_service:
+        return makeResult(False, 'Samba service not found')
+
+    if not sambaConnectionManager.connected(samba_service['service_name'], samba_service['share_name']):
+        sambaConnectionManager.connect(
+            samba_service['service_name'],
+            samba_service['share_name'],
+            samba_service['user_id'],
+            samba_service['password'],
+            samba_service['use_ntlm_v2'],
+            samba_service['is_direct_tcp'],
+        )
+
+    try:
+        with sambaConnectionManager.open(samba_service['service_name'], samba_service['share_name'], target_dir, 'wb') as remote_file:
+            remote_file.write(content.encode('utf-8'))
+        return makeResult(True, 'File updated')
+    except Exception as e:
+        return makeResult(False, str(e))
+        
+    
+
+
 @app.route('/v1/samba/files/upload', methods=['POST'])
 def sambaUpload():
     samba_service_id = flask.request.args.get('samba_service_id', 0)
@@ -396,7 +479,7 @@ def sambaUpload():
     if not samba_service:
         return makeResult(False, 'Samba service not found')
 
-    path = flask.request.json.get('path')
+    path = flask.request.args.get('path')
     if not path:
         return makeResult(False, 'Path is required')
     try:
@@ -515,19 +598,25 @@ def sambaGet():
 
     try:
         remote_file = sambaConnectionManager.open(samba_service['service_name'], samba_service['share_name'], pathlib.Path(file_path), 'rb')
-        return makeFileResponse(remote_file, mimetypes.guess_type(file_path)[0])
+        # ext
+        file_name, file_ext = os.path.splitext(file_path)
+        file_ext = file_ext[1:] if file_ext else ''
+        prior_mime = prior_mime_types.get(file_ext, '')
+        return makeFileResponse(remote_file, file_name, mimetypes.guess_type(file_path)[0] if not prior_mime else prior_mime)
     except Exception as e:
         return makeResult(False, str(e))
     
 
 
 def run():
-    secret = dataProvider.DataProvider.getConfig('secret')
-    if not secret:
-        secret = str(uuid.uuid4())
-    app.secret_key = hashlib.sha256(secret.encode('utf-8')).hexdigest()
-    app.run(debug=False, host='0.0.0.0', port=2621)
+    app.run(debug=False, host='0.0.0.0', port=3621)
 
+
+secret = dataProvider.DataProvider.getConfig('secret')
+if not secret:
+    secret = str(uuid.uuid4())
+else:
+    app.secret_key = hashlib.sha256(secret.encode('utf-8')).hexdigest()
 
 if __name__ == '__main__':
     run()

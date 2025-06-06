@@ -52,6 +52,7 @@ function Home() {
   });
   const [currentTab, setCurrentTab] = React.useState(0);
   const [currentTheme, setCurrentTheme] = React.useState(theme.theme());
+  const [currentThemeMode, setCurrentThemeMode] = React.useState(theme.getCurrentThemeMode());
   const [selectedIndex, setSelectedIndex] = React.useState({
     type: 'Overview',
     title: 'Overview',
@@ -111,6 +112,7 @@ function Home() {
     handleDriveListUpdate()
     theme.listenToThemeModeChange(() => {
       setCurrentTheme(theme.theme());
+      setCurrentThemeMode(theme.getCurrentThemeMode());
     })
   }, [])
 
@@ -191,6 +193,11 @@ function Home() {
           <Mui.Typography color="inherit" sx={{ fontWeight: 500, letterSpacing: 0.5, fontSize: 20 }}>
             {selectedIndex.title}
           </Mui.Typography>
+          <Mui.IconButton onClick={() => {
+            theme.rotateThemeMode()
+          }}>
+            {currentThemeMode === 'light' ? <Mui.Icons.Brightness4 /> : <Mui.Icons.Brightness7 />}
+          </Mui.IconButton>
         </Mui.Toolbar>
         <Mui.Paper style={{ padding: 0, borderTopLeftRadius: 30, height: `calc(100vh - 64px)`, width: `calc(100vw - ${secondBoxMarginLeft})` }}>
           {selectedIndex.type === "Overview" && <Overview onSwitchToClouddrive={drive_id => {

@@ -17,6 +17,8 @@ import {
 } from "react-router-dom";
 import Theme from './theme';
 import theme from './theme';
+import { GlobalWorkerOptions } from 'pdfjs-dist';
+GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 const router = createBrowserRouter([
   {

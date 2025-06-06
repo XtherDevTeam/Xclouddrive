@@ -99,8 +99,29 @@ function More() {
           <Mui.ListItemIcon><Mui.Icons.Info /></Mui.ListItemIcon>
           <Mui.ListItemText primary="About" secondary="Xclouddrive 1.0.0(1)" />
         </Mui.ListItemButton>
+        <Mui.ListItemButton onClick={() => {
+          Api.deauthorize().then(r => {
+            console.log(r)
+            if (r.status) {
+              setMessageContent(`Deauthorized suceessfully`)
+              setMessageType('success')
+              setMessageOpen(true)
+              setMessageTitle('Success')
+              window.location.reload()
+            } else {
+              setMessageTitle('Error')
+              setMessageContent(r.data.data)
+              setMessageType('error')
+              setMessageOpen(true)
+            }
+          })
+        }}>
+          <Mui.ListItemIcon><Mui.Icons.ExitToApp /></Mui.ListItemIcon>
+          <Mui.ListItemText primary="Deauthorize" secondary="Deauthorize this device from Xclouddrive" />
+        </Mui.ListItemButton>
       </Mui.List>
     </Mui.Box>
+
   </Mui.Box>}
     {showAboutPage && <Mui.Box sx={{ height: '100%', width: 'calc(100% - 30px)' }}>
       <About onClose={() => setShowAboutPage(false)} />

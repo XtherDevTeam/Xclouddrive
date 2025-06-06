@@ -41,6 +41,7 @@ function ContentEditDialog({ defaultValue, onOk, title, description, icon, secre
       <Mui.ListItemIcon>
         {icon}
       </Mui.ListItemIcon>
+      {hideCurrentValue && <Mui.ListItemText primary={title} />}
       {!hideCurrentValue && <Mui.ListItemText primary={title} secondary={defaultValue ? (secret ? '************' : defaultValue) : 'Click to edit'} secondaryTypographyProps={{ textOverflow: 'ellipsis', overflow: 'hidden', width: '100%', maxHeight: '3em' }} />}
     </Mui.ListItemButton>
     {/* <Mui.ListItem sx={{ marginBottom: 10, backgroundColor: currentTheme.palette.surfaceContainerLowest.main }}>

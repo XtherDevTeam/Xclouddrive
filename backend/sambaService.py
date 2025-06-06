@@ -9,7 +9,7 @@ import pathlib
 import typing
 
 
-class SambaFile(typing.BinaryIO):
+class SambaFile(io.RawIOBase):
     def __init__(self, conn: SMBConnection, share_name: str, path: pathlib.Path, mode: str = 'r'):
         self.conn: SMBConnection = conn
         self.share_name: str = share_name
@@ -21,6 +21,7 @@ class SambaFile(typing.BinaryIO):
         except OperationFailure as e:
             # suppose the file not exist
             if 'x' in self.mode or 'w' in self.mode:
+                logger.Logger.log(f"Failed to create file {self.path}: {e}")
                 self.conn.storeFile(self.share_name, str(
                     self.path), io.BytesIO(b''))
 
@@ -59,11 +60,9 @@ class SambaFile(typing.BinaryIO):
 
     def read(self, size: int = -1) -> bytes:
         try:
-            if self.attrs.isDirectory:
-                raise IsADirectoryError(f"Is a directory: {self.path}")
             buffer = io.BytesIO()
             self.conn.retrieveFileFromOffset(self.share_name, str(
-                self.path), buffer, self.seek_pos, size, timeout=114514)
+                self.path), buffer, self.seek_pos, size, timeout=1)
             buffer.seek(0)
             data = buffer.read(size)
             self.seek_pos += len(data)
@@ -81,7 +80,7 @@ class SambaFile(typing.BinaryIO):
                 raise io.UnsupportedOperation("File not opened for writing")
             buffer = io.BytesIO(data)
             self.conn.storeFileFromOffset(self.share_name, str(
-                self.path), buffer, self.seek_pos, timeout=114514)
+                self.path), buffer, self.seek_pos, timeout=1)
             self.seek_pos += len(data)
             return len(data)
         except OperationFailure as e:

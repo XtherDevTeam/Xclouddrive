@@ -50,6 +50,15 @@ export function authorize(secret) {
 }
 
 /**
+ * Deauthorize the current session.
+ * POST /api/v1/auth/deauthorize
+ * @returns {Promise<Object>} The server response (e.g., {status: true, data: "Successfully deauthorized"})
+ */
+export function deauthorize() {
+  return axios.post(`/api/v1/auth/deauthorize`).then(r => r.data);
+}
+
+/**
  * Attempts to authorize using a stored secret.
  * Call this on application load.
  * @returns {Promise<Object|null>} Server response on success, or null if no secret stored.
@@ -302,6 +311,36 @@ export function sambaUploadFile(sambaServiceId, path, fileObject, onUploadProgre
   return axios.post(uploadUrl, formData, config).then(r => r.data);
 }
 
+/**
+ * Update a file on a specified Samba share with specified content in UTF-8
+ * POST /api/v1/samba/files/update
+ * @param {number} sambaServiceId - The ID of the Samba service.
+ * @param {string} file_path - The path to the file to update.
+ * @param {string} content - The new content of the file in UTF-8.
+ * @returns {Promise<Object>} The server response (e.g., {status: true, data: "File updated"})
+ */
+export function sambaUpdateFile(sambaServiceId, file_path, content) {
+  return axios.post(`/api/v1/samba/files/update`, {
+    samba_service_id: sambaServiceId,
+    path: file_path,
+    content: content
+  }).then(r => r.data);
+}
+
+/**
+ * Create a empty file on a specified Samba share.
+ * POST /api/v1/samba/files/touch
+ * @param {number} sambaServiceId - The ID of the Samba service.`
+ * @param {string} path - The path to the file to create.
+ * @returns {Promise<Object>} The server response (e.g., {status: true, data: "File created"})
+ */
+export function sambaTouchFile(sambaServiceId, path) {
+  return axios.post(`/api/v1/samba/files/touch`, {
+    samba_service_id: sambaServiceId,
+    path: path
+  }).then(r => r.data);
+}
+
 // Config set and get
 /**
  * Retrieves the current configuration of the API.
@@ -332,6 +371,7 @@ export default {
   getStatus,
   initialize,
   authorize,
+  deauthorize,
   autoAuthenticate,
   sambaConnect,
   sambaDisconnect,
@@ -347,7 +387,9 @@ export default {
   sambaGetAttributes,
   sambaMakeDirectory,
   sambaUploadFile,
+  sambaUpdateFile,
   sambaFetchFile,
+  sambaTouchFile,
   sambaGetFileUrl,
   getConfig,
   setConfig
