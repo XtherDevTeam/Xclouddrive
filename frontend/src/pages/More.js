@@ -123,7 +123,7 @@ function More() {
     </Mui.Box>
 
   </Mui.Box>}
-    {showAboutPage && <Mui.Box sx={{ height: '100%', width: 'calc(100% - 30px)' }}>
+    {showAboutPage && <Mui.Box sx={{ height: '100%', width: 'calc(100%)' }}>
       <About onClose={() => setShowAboutPage(false)} />
 
     </Mui.Box>}

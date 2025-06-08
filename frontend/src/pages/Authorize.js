@@ -18,6 +18,32 @@ function Copyright(props) {
   );
 }
 
+function TitleAndDescription() {
+  const [title, setTitle] = React.useState("")
+  const [description, setDescription] = React.useState("")
+
+  React.useEffect(() => {
+    Api.getStatus().then(r => {
+      if (r.status) {
+        setDescription(r.data.description)
+        setTitle(r.data.title)
+      }
+    })
+  }, [])
+
+  return (
+    <Mui.Box sx={{ my: 4 }}>
+      <Mui.Typography variant="h4" align="center" gutterBottom>
+        {title}
+      </Mui.Typography>
+      <Mui.Typography variant="body1" align="center" color="text.secondary" component="p">
+        {description}
+      </Mui.Typography>
+    </Mui.Box>
+  )
+}
+
+
 export default function Authorize() {
   const navigate = useNavigate();
 
@@ -92,9 +118,7 @@ export default function Authorize() {
           <Mui.Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
             <Mui.LockOutlinedIcon />
           </Mui.Avatar>
-          <Mui.Typography component="h1" variant="h5">
-            Sign in
-          </Mui.Typography>
+          <TitleAndDescription />
           <Mui.Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <Mui.TextField
               margin="normal"
@@ -116,14 +140,7 @@ export default function Authorize() {
             >
               Authorize
             </Mui.Button>
-            <Mui.Grid container>
-              <Mui.Grid item xs>
-                <Mui.Link href="https://www.xiaokang00010.top:4001/xiaokang00010/xclouddrive" variant="body2">
-                  {"About"}
-                </Mui.Link>
-              </Mui.Grid>
-            </Mui.Grid>
-            <Copyright sx={{ mt: 5 }} />
+            <Copyright sx={{ padding: 10 }} />
           </Mui.Box>
         </Mui.Box>
       </Mui.Grid>

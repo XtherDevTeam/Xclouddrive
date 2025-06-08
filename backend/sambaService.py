@@ -258,7 +258,7 @@ class SambaService:
             'is_dir': shared_file.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == SMB_FILE_ATTRIBUTE_DIRECTORY,
             'is_file': shared_file.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == 0,
             'allocated_size': shared_file.alloc_size,
-            'mime': mimetypes.guess_type(shared_file.filename) if shared_file.filename.split('.')[-1].lower() not in prior_mime_types else prior_mime_types[shared_file.filename.split('.')[-1].lower()],
+            'mime': mimetypes.guess_type(shared_file.filename)[0] if shared_file.filename.split('.')[-1].lower() not in prior_mime_types else prior_mime_types[shared_file.filename.split('.')[-1].lower()],
         }
 
     def attrs(self, path: pathlib.Path) -> dict[str, typing.Any]:
@@ -275,7 +275,7 @@ class SambaService:
                     'is_dir': attrs.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == SMB_FILE_ATTRIBUTE_DIRECTORY,
                     'is_file': attrs.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == 0,
                     'allocated_size': attrs.alloc_size,
-                    'mime': mimetypes.guess_type(attrs.filename) if attrs.filename.split('.')[-1].lower() not in prior_mime_types else prior_mime_types[attrs.filename.split('.')[-1].lower()],
+                    'mime': mimetypes.guess_type(attrs.filename)[0] if attrs.filename.split('.')[-1].lower() not in prior_mime_types else prior_mime_types[attrs.filename.split('.')[-1].lower()],
                 }
             except OperationFailure as e:
                 logger.Logger.log(f"Failed to get attributes of {path}: {e}")
