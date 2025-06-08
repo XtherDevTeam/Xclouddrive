@@ -199,10 +199,11 @@ export function getSambaRoute(id) {
  * @param {string} [path=''] - The path to the directory (defaults to share root).
  * @returns {Promise<Array<Object>|Object>} Server response, array of file/folder info or error object.
  */
-export function sambaListDirectory(sambaServiceId, path = '') {
+export function sambaListDirectory(sambaServiceId, path = '', search = '*') {
   return axios.post(`/api/v1/samba/files/dir`, {
     samba_service_id: sambaServiceId,
-    path: path
+    path: path,
+    search: search
   }).then(r => r.data);
 }
 

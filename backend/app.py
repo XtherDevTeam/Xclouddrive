@@ -41,7 +41,9 @@ prior_mime_types = {
     "tiff": "image/tiff",
     "txt": "text/plain",
     "xls": "application/vnd.ms-excel",
-    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "hpp": "text/x-c++header",
+    "py": "text/x-python",
 }
 
 
@@ -257,6 +259,8 @@ def sambaRoute(id: int):
 def sambaDir():
 
     dir_path = flask.request.json.get('path', '')
+    searchParam = flask.request.json.get('search', '*')
+    logger.Logger.log(f"dir_path: {dir_path}, searchParam: {searchParam}")
     samba_service_id = flask.request.json.get('samba_service_id', 0)
     samba_service = dataProvider.DataProvider.getSambaService(samba_service_id)
     if not samba_service:
@@ -279,6 +283,7 @@ def sambaDir():
                 samba_service['service_name'],
                 samba_service['share_name'],
                 pathlib.Path(dir_path),
+                searchParam=searchParam
             )
         })
     except Exception as e:

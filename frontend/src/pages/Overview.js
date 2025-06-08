@@ -327,7 +327,7 @@ export default function Overview({ onSwitchToClouddrive, onUpdateDriveList }) {
           All samba drives are listed here. You can also add a new drive by clicking the "Add Drive" button.
         </Mui.Typography>
       </Mui.Grid>
-      {drives.map(drive => <Mui.Grid item xs={12} sm={6} md={4} key={drive.id}>
+      {drives?.map(drive => <Mui.Grid item xs={12} sm={6} md={4} key={drive.id}>
         <Mui.Card sx={{ width: '100%' }}>
           <Mui.CardContent>
             <Mui.Typography variant="body1" sx={{ fontWeight: 'bold' }}>

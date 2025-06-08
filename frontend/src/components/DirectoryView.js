@@ -16,8 +16,8 @@ class DirectoryUtils {
     this.lsdir();
   }
 
-  lsdir() {
-    return Api.sambaListDirectory(this.sambaServiceId, this.path ? this.path : "/").then(data => {
+  lsdir(search = '*') {
+    return Api.sambaListDirectory(this.sambaServiceId, this.path ? this.path : "/", search ? search : "*").then(data => {
       if (data.status) {
         this.path = data.data.dir === '/' ? '' : data.data.dir;
         this.content = data.data.content || []; // Ensure content is an array
@@ -359,7 +359,7 @@ function FolderDetailDialog({ open, onClose, dir, onErr, dirUtils }) {
   </Mui.Dialog >
 }
 
-export default function DirectoryView({ path, setPath, sambaServiceId, style, onErr, refresher }) {
+export default function DirectoryView({ path, setPath, sambaServiceId, style, onErr, refresher, setRefresher, searchParam }) {
   const [dirUtils, setDirUtils] = React.useState(null);
   const [fileDetailDialogOpen, setFileDetailDialogOpen] = React.useState(false);
   const [fileDetailDialogFile, setFileDetailDialogFile] = React.useState(null);
@@ -454,10 +454,18 @@ export default function DirectoryView({ path, setPath, sambaServiceId, style, on
       setRawDirContent([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, refresher, onErr, internalOnUpdateDir]);
+  }, [path, refresher, internalOnUpdateDir]);
+
+  React.useEffect(() => {
+    if (dirUtils) {
+      dirUtils.lsdir(searchParam)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParam]);
 
   React.useEffect(() => {
     setPath('')
+    setRefresher(Date.now())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sambaServiceId]);
 

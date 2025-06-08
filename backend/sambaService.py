@@ -1,4 +1,5 @@
 import io
+import mimetypes
 import os
 from smb.SMBConnection import SMBConnection
 from smb.smb_structs import OperationFailure
@@ -7,6 +8,28 @@ from smb.base import SharedFile
 import logger
 import pathlib
 import typing
+
+
+prior_mime_types = {
+    "bmp": "image/bmp",
+    "doc": "application/msword",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "htm": "text/htm",
+    "html": "text/html",
+    "jpg": "image/jpg",
+    "jpeg": "image/jpeg",
+    "pdf": "application/pdf",
+    "png": "image/png",
+    "ppt": "application/vnd.ms-powerpoint",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "tiff": "image/tiff",
+    "txt": "text/plain",
+    "xls": "application/vnd.ms-excel",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "hpp": "text/x-c++header",
+    "py": "text/x-python",
+}
+
 
 
 class SambaFile(io.RawIOBase):
@@ -162,7 +185,7 @@ class SambaService:
             logger.Logger.log(f"Disconnected from {self.server_name}")
             self.conn = None
 
-    def lsdir(self, path: pathlib.Path) -> list:
+    def lsdir(self, path: pathlib.Path, searchParam: str = '*') -> list:
         """
         List the contents of a directory.
 
@@ -178,9 +201,9 @@ class SambaService:
         """
         if self.is_derived:
             try:
-                logger.Logger.log(f"Listing directory {path}")
+                logger.Logger.log(f"Listing directory {path} with pattern {searchParam}")
                 files: list[SharedFile] | list[dict[str, typing.Any]
-                                               ] = self.conn.listPath(self.share_name, str(path.resolve()))
+                                               ] = self.conn.listPath(self.share_name, str(path.resolve()), pattern=searchParam, timeout=1)
                 files = [self.attrs_from_shared_file(f) for f in files]
                 return files
             except OperationFailure as e:
@@ -191,12 +214,12 @@ class SambaService:
                 raise e
         else:
             with self.derive() as derived:
-                return derived.lsdir(path)
+                return derived.lsdir(path, searchParam)
 
     def mkdir(self, path: pathlib.Path):
         if self.is_derived:
             try:
-                self.conn.createDirectory(self.share_name, str(path.resolve()))
+                self.conn.createDirectory(self.share_name, str(path.resolve()), timeout=1)
             except OperationFailure as e:
                 logger.Logger.log(f"Failed to create directory {path}: {e}")
                 raise e
@@ -210,7 +233,7 @@ class SambaService:
     def delete(self, path: pathlib.Path):
         if self.is_derived:
             try:
-                self.conn.deleteFiles(self.share_name, str(path.resolve()))
+                self.conn.deleteFiles(self.share_name, str(path.resolve()), timeout=1)
             except OperationFailure as e:
                 logger.Logger.log(f"Failed to delete file {path}: {e}")
                 raise e
@@ -235,13 +258,14 @@ class SambaService:
             'is_dir': shared_file.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == SMB_FILE_ATTRIBUTE_DIRECTORY,
             'is_file': shared_file.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == 0,
             'allocated_size': shared_file.alloc_size,
+            'mime': mimetypes.guess_type(shared_file.filename) if shared_file.filename.split('.')[-1].lower() not in prior_mime_types else prior_mime_types[shared_file.filename.split('.')[-1].lower()],
         }
 
     def attrs(self, path: pathlib.Path) -> dict[str, typing.Any]:
         if self.is_derived:
             try:
                 attrs: SharedFile = self.conn.getAttributes(
-                    self.share_name, str(path.resolve()))
+                    self.share_name, str(path.resolve()), timeout=1)
                 return {
                     'name': attrs.filename,
                     'size': attrs.file_size,
@@ -251,6 +275,7 @@ class SambaService:
                     'is_dir': attrs.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == SMB_FILE_ATTRIBUTE_DIRECTORY,
                     'is_file': attrs.file_attributes & SMB_FILE_ATTRIBUTE_DIRECTORY == 0,
                     'allocated_size': attrs.alloc_size,
+                    'mime': mimetypes.guess_type(attrs.filename) if attrs.filename.split('.')[-1].lower() not in prior_mime_types else prior_mime_types[attrs.filename.split('.')[-1].lower()],
                 }
             except OperationFailure as e:
                 logger.Logger.log(f"Failed to get attributes of {path}: {e}")
@@ -266,7 +291,7 @@ class SambaService:
         if self.is_derived:
             try:
                 self.conn.rename(self.share_name, str(
-                    old_path.resolve()), str(new_path.resolve()))
+                    old_path.resolve()), str(new_path.resolve()), timeout=1)
             except OperationFailure as e:
                 logger.Logger.log(
                     f"Failed to rename {old_path} to {new_path}: {e}")
@@ -336,7 +361,7 @@ class SambaConnectionManager():
             self.connections[service_key].disconnect()
             del self.connections[service_key]
 
-    def lsdir(self, service_name: str, share_name: str, path: pathlib.Path) -> list:
+    def lsdir(self, service_name: str, share_name: str, path: pathlib.Path, searchParam: str = '*') -> list:
         """
         List the contents of a directory.
 
@@ -350,7 +375,8 @@ class SambaConnectionManager():
         """
         service_key = f"{service_name}:{share_name}"
         if service_key in self.connections:
-            return self.connections[service_key].lsdir(path)
+            logger.Logger.log(f"Passing param: {searchParam}")
+            return self.connections[service_key].lsdir(path, searchParam=searchParam)
         raise Exception(f"Not connected to {service_name}:{share_name}")
 
     def mkdir(self, service_name: str, share_name: str, path: pathlib.Path):

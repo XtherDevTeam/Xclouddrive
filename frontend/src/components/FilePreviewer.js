@@ -19,9 +19,7 @@ function TextFilePreviewer({ file_path, file_attrs, file_url, samba_service_id, 
 
   React.useEffect(() => {
     if (file_path) {
-      let mime_query = mime.lookup(file_path)
-      mime_query = mime_query ? mime_query : 'application/octet-stream'
-      setFileMime(mime_query)
+      setFileMime(file_attrs?.mime)
       Api.sambaFetchFile(samba_service_id, file_path)
         .then(response => {
           console.log(response.data)
@@ -47,10 +45,10 @@ function TextFilePreviewer({ file_path, file_attrs, file_url, samba_service_id, 
         <Mui.Button onClick={() => setOpen(false)}>Close</Mui.Button>
         <Mui.Button onClick={() => {
           Api.sambaUpdateFile(samba_service_id, file_path, content)
-           .then(response => {
+            .then(response => {
               console.log(response)
             })
-           .catch(error => console.error(error));
+            .catch(error => console.error(error));
         }}>Save</Mui.Button>
       </Mui.DialogActions>
     </Mui.Dialog>
@@ -74,9 +72,9 @@ function ImageFilePreviewer({ file_path, file_attrs, file_url, open, setOpen }) 
       if (!visible) {
         setOpen(false);
       }
-    }} >
-      <PhotoView src={file_url}>
-        <img key={1} src={file_url} style={{ display: 'block', width: '0px', height: '0px' }} ref={dummyRef} alt=""></img>
+    }} index={0}>
+      <PhotoView src={file_url} >
+        <img key={0} src={file_url} style={{ display: 'block', width: '0px', height: '0px' }} ref={dummyRef} alt=""></img>
       </PhotoView>
     </PhotoProvider>
   )
@@ -118,8 +116,7 @@ export default function FilePreviewer({ file_path, file_attrs, samba_service_id,
   React.useEffect(() => {
     if (file_path) {
       setFileUrl(Api.sambaGetFileUrl(samba_service_id, file_path))
-      let mime_query = mime.lookup(file_path)
-      mime_query = mime_query ? mime_query : 'application/octet-stream'
+      let mime_query = file_attrs?.mime ? file_attrs.mime : 'application/octet-stream'
       setFileMime(mime_query)
       console.log(mime_query)
 

@@ -9,8 +9,9 @@ import More from './More';
 import fs from '../fs';
 import { filesize } from 'filesize';
 
-function Breadcrumb({ path, rootPlaceholder, onClick }) {
+function Breadcrumb({ path, rootPlaceholder, onClick, search, setSearch }) {
   const [items, setItems] = React.useState([]);
+  const [showSearch, setShowSearch] = React.useState(false);
   React.useEffect(() => {
     let fragments = path.split('/')
     if (fragments[0] === '') {
@@ -28,11 +29,31 @@ function Breadcrumb({ path, rootPlaceholder, onClick }) {
     onClick(selectedPath);
   }
 
-  return <Mui.Breadcrumbs aria-label="breadcrumb">
-    {items.map((item, index) => (
-      <Mui.Chip key={index} label={item} onClick={() => handleClick(item, index)} />
-    ))}
-  </Mui.Breadcrumbs>
+  return <Mui.Box sx={{ display: 'flex', width: '100%', alignItems: 'center' }}>
+    <Mui.Breadcrumbs aria-label="breadcrumb" sx={{ flexGrow: 1 }}>
+      {items.map((item, index) => (
+        <Mui.Chip key={index} label={item} onClick={() => handleClick(item, index)} />
+      ))}
+    </Mui.Breadcrumbs>
+    <Mui.Box>
+      {showSearch ?
+        <Mui.TextField
+          label="Search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          size="small"
+          InputProps={{
+            endAdornment: <Mui.InputAdornment position="end">
+              <Mui.IconButton edge="end" onClick={() => setShowSearch(!showSearch)}>
+                <Mui.Icons.Close />
+              </Mui.IconButton>
+            </Mui.InputAdornment>
+          }}
+        /> : <Mui.IconButton edge="end" onClick={() => setShowSearch(!showSearch)}>
+          <Mui.Icons.Search />
+        </Mui.IconButton>}
+    </Mui.Box>
+  </Mui.Box>
 }
 
 function NewFolderDialog({ open, onClose, onErr, sambaServiceId, path, onOk }) {
@@ -117,7 +138,7 @@ function UploadFileDialog({ open, onClose, onErr, sambaServiceId, path, onOk }) 
         <Mui.Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
           <Mui.CircularProgress />
           Uploading...
-          {progress.slice(0, progress.length > 10 ? 10 : progress.length).map((p, index) => (<Mui.Box sx={{width: '50%', }}>
+          {progress.slice(0, progress.length > 10 ? 10 : progress.length).map((p, index) => (<Mui.Box sx={{ width: '50%', }}>
             <Mui.Typography key={index} variant="body2" sx={{ marginTop: 10 }}>File {index + 1} - {p}%</Mui.Typography>
             <Mui.LinearProgress key={index} variant="determinate" value={p} sx={{ width: '100%' }} />
           </Mui.Box>
@@ -214,6 +235,25 @@ export default function DriveView({ drive }) {
   const [uploadFileDialogOpen, setUploadFileDialogOpen] = React.useState(false)
   const [createFileDialogOpen, setCreateFileDialogOpen] = React.useState(false)
 
+  const [impendingSearchState, setImpendingSearchState] = React.useState(null)
+  const [delayedSearchState, setDelayedSearchState] = React.useState(null)
+  const currentImpendingSearchStateTimeout = React.useRef(null);
+
+  React.useEffect(() => {
+    if (currentImpendingSearchStateTimeout) {
+      console.log('search: clearing timeout', currentImpendingSearchStateTimeout);
+      clearTimeout(currentImpendingSearchStateTimeout.current);
+    }
+    currentImpendingSearchStateTimeout.current = setTimeout(() => {
+      setDelayedSearchState(impendingSearchState);
+      currentImpendingSearchStateTimeout.current = null;
+    }, 1000)
+  }, [impendingSearchState])
+
+  React.useEffect(() => {
+    console.log('search: searching for', delayedSearchState);
+  }, [delayedSearchState])
+
   function refreshDriveView() {
     setRefresher(Date.now());
   }
@@ -232,14 +272,14 @@ export default function DriveView({ drive }) {
         {drive?.description}
       </Mui.Typography>
     </Mui.Box>
-    <Breadcrumb path={path} rootPlaceholder={drive?.name} onClick={setPath} />
-    <DirectoryView refresher={refresher} path={path} setPath={setPath} sambaServiceId={sambaServiceId} style={{ width: '100%' }} onErr={(message) => {
+    <Breadcrumb path={path} rootPlaceholder={drive?.name} onClick={setPath} search={impendingSearchState} setSearch={setImpendingSearchState} />
+    <DirectoryView refresher={refresher} setRefresher={setRefresher} path={path} setPath={setPath} sambaServiceId={sambaServiceId} style={{ width: '100%' }} onErr={(message) => {
       console.log('onErr', message);
       setMessageTitle('Error')
       setMessageContent(`${message}`)
       setMessageType('error')
       setMessageOpen(true)
-    }} />
+    }} searchParam={delayedSearchState} />
     <Message title={messageTitle} message={messageContent} type={messageType} open={messageOpen} dismiss={() => setMessageOpen(false)} />
     <NewFolderDialog open={newFolderDialogOpen} onClose={() => setNewFolderDialogOpen(false)} onErr={(message) => {
       console.log('onErr', message);
