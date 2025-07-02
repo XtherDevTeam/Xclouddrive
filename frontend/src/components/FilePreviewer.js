@@ -10,7 +10,8 @@ import {
 import 'react-photo-view/dist/react-photo-view.css';
 import mime from 'mime-types';
 import MonacoEditor from 'react-monaco-editor';
-import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
+// import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
+import { DocRender } from 'react-doc-render';
 
 
 function TextFilePreviewer({ file_path, file_attrs, file_url, samba_service_id, open, setOpen }) {
@@ -99,8 +100,11 @@ function DocumentFilePreviewer({ file_path, file_attrs, file_url, open, setOpen 
     <Mui.Dialog open={open} onClose={() => setOpen(false)} maxWidth="lg">
       <Mui.DialogTitle>Preview {file_attrs?.name}</Mui.DialogTitle>
       <Mui.DialogContent>
-        <DocViewer documents={[{ uri: file_url }]} style={{ width: '60vw', height: '50vh' }} pluginRenderers={DocViewerRenderers} />
-      </Mui.DialogContent>
+        <DocRender
+          uri={file_url}
+          style={{ width: '100%', height: '80vh' }}
+        />
+      </Mui.DialogContent> 
       <Mui.DialogActions>
         <Mui.Button onClick={() => setOpen(false)}>Close</Mui.Button>
       </Mui.DialogActions>
